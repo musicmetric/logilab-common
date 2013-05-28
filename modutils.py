@@ -34,6 +34,7 @@ import os
 from os.path import splitext, join, abspath, isdir, dirname, exists, basename
 from imp import find_module, load_module, C_BUILTIN, PY_COMPILED, PKG_DIRECTORY
 from distutils.sysconfig import get_config_var, get_python_lib, get_python_version
+import pkg_resources
 
 try:
     import zipimport
@@ -601,6 +602,9 @@ def _module_file(modpath, path=None):
         checkeggs = False
     imported = []
     while modpath:
+        if modpath[0] in pkg_resources._namespace_packages and len(modpath) > 1:
+            module = sys.modules[modpath.pop(0)]
+            path = module.__path__
         try:
             _, mp_filename, mp_desc = find_module(modpath[0], path)
         except ImportError:
