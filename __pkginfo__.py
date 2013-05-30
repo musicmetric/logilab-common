@@ -25,7 +25,7 @@ subpackage_of = 'logilab'
 subpackage_master = True
 
 numversion = (0, 57, 1)
-version = '.'.join([str(num) for num in numversion])
+version = '.'.join([str(num) for num in numversion])+'+sem-01'
 
 license = 'LGPL' # 2.1 or later
 description = "collection of low-level Python packages and modules used by Logilab projects"
