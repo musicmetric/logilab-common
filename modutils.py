@@ -541,13 +541,40 @@ def _file_from_modpath(modpath, path=None, context=None):
     documentation for more information
     """
     assert len(modpath) > 0
+
+    # patch taken from here: http://www.logilab.org/ticket/8796 
+
+    paths = []
+
     if context is not None:
-        try:
-            mtype, mp_filename = _module_file(modpath, [context])
-        except ImportError:
-            mtype, mp_filename = _module_file(modpath, path)
-    else:
-        mtype, mp_filename = _module_file(modpath, path)
+        paths.append((modpath, [context]))
+    paths.append((modpath, path))
+
+    if len(modpath) > 1 and modpath[0] in pkg_resources._namespace_packages:
+        module = sys.modules[modpath[0]]
+        namespaced_path = module.__path__
+        paths.append((modpath[1:], namespaced_path))
+
+    mtype = mp_filename = None
+    found = False
+
+    for _modpath, _path in paths:
+        if not type(_path) is list:
+            _path = [_path]
+        for _p in _path:
+            if _p is None:
+                continue
+            try:
+                mtype, mp_filename = _module_file(_modpath, [_p])
+                found = True
+                break
+            except ImportError:
+                pass
+
+    if not found:
+        raise ImportError("No module named %s in %s" % (
+                    '.'.join(modpath), [p for _modpath, p in paths]))
+
     if mtype == PY_COMPILED:
         try:
             return get_source_file(mp_filename)
@@ -600,11 +627,11 @@ def _module_file(modpath, path=None):
         checkeggs = True
     except AttributeError:
         checkeggs = False
+
+    modpath = list(modpath)
+
     imported = []
     while modpath:
-        if modpath[0] in pkg_resources._namespace_packages and len(modpath) > 1:
-            module = sys.modules[modpath.pop(0)]
-            path = module.__path__
         try:
             _, mp_filename, mp_desc = find_module(modpath[0], path)
         except ImportError:
